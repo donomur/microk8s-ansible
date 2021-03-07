@@ -1,0 +1,7 @@
+---
+
+  - name: create metadata for each server's SD card
+    include_tasks: loop.yml
+    loop: "{{ groups.k8s_nodes }}"
+    loop_control:
+      loop_var: current_node

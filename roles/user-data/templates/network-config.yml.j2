@@ -1,0 +1,16 @@
+version: 2
+{% if enable_ethernet %}
+ethernets:
+  eth0:
+    dhcp4: {{ enable_ipv4 | default(true) }}
+    dhcp6: {{ enable_ipv6 | default(false) }}
+    optional: {{ ethernet_optional | default(true) }}
+{% endif %}
+{% if enable_wifi %}
+wifis:
+  wlan0:
+    dhcp4: {{ enable_ipv4 | default(true) }}
+    dhcp6: {{ enable_ipv6 | default(false) }}
+    optional: {{ wifi_optional | default(true) }}
+    access-points: {{ wifi_access_points }}
+{% endif %}

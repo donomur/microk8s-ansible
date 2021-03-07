@@ -1,0 +1,22 @@
+---
+
+#### This section is for building cloud-init data (ignore this section if you have existing nodes)
+  add_users: # This section should match the cloud-init users syntax. Examples here: https://cloudinit.readthedocs.io/en/latest/topics/examples.html#including-users-and-groups
+    # - default
+    - name: dmurphy
+      shell: /usr/bin/bash
+      sudo: ALL=(ALL) NOPASSWD:ALL
+      ssh_authorized_keys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC8DSgOBY+zsDWT7BUkTMTuCVWDv3FNZOvS9xd8hi9Fh
+
+  boot_volume_path: /media/dmurphy/system-boot/
+
+  enable_ipv4: true
+  enable_ipv6: true
+
+  enable_ethernet: true
+  enable_wifi: false
+
+  wifi_access_points: # using netplan yaml formatting (https://netplan.io/examples/)
+    WifiAccessPointName:
+      password: "asdf"

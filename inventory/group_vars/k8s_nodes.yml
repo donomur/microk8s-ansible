@@ -1,0 +1,12 @@
+---
+
+#### This section is for microk8s installation
+  host_key_checking: false
+  k8s_version: "1.19"  # pick whatever version of k8s you want from https://snapcraft.io/microk8s
+  add_local_kubeconfig: true
+  microk8s_addons: # find more at https://microk8s.io/docs/addons#heading--list
+    - ha-cluster
+    - dns
+    - rbac
+    # - dashboard
+    # - ingress

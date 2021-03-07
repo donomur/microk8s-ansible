@@ -1,0 +1,8 @@
+#cloud-config
+users:
+{{ add_users | to_nice_yaml(indent=2) }}
+hostname: "{{ current_node }}"
+timezone: "{{ node_timezone | default('UTC') }}"
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true

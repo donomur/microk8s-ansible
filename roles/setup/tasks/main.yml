@@ -1,0 +1,107 @@
+---
+
+  - name: install microk8s
+    snap:
+      name: microk8s
+      classic: true
+      channel: "{{ k8s_version }}"
+      state: present
+    become: true
+
+  - name: Activating cgroup support
+    lineinfile:
+      path: /boot/firmware/cmdline.txt
+      regexp: '^((?!.*\bcgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\b).*)$'
+      line: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
+      backrefs: true
+    become: true
+    notify: reboot
+
+  - name: add ansible user to microk8s group
+    user:
+      append: true
+      name: "{{ ansible_user_id }}"
+      groups:
+        - microk8s
+    become: true
+    notify: reboot
+
+  - name: Flush handlers
+    meta: flush_handlers
+
+  - name: get microk8s status
+    shell: |
+      microk8s status --wait-ready --format yaml --timeout 300
+    changed_when: false
+    register: initial_microk8s_status
+
+  - name: add nodes
+    include_tasks: join-node.yml
+    loop: "{{ hostvars | json_query('*[ansible_default_ipv4][].address') | difference(initial_microk8s_status.stdout | from_yaml | json_query('*[nodes][][].address') | map('regex_replace', '^(?P<host>.+):(?P<port>\\d+)$', '\\g<host>') | list) | reject('equalto', hostvars[groups['initial'][0]].ansible_default_ipv4.address) | list | unique }}"
+
+  - name: get microk8s status
+    shell: |
+      microk8s status --wait-ready --format yaml --timeout 300
+    changed_when: false
+    register: post_join_microk8s_status
+
+  - name: enable extra plugins when needed
+    shell: |
+      microk8s enable {{ microk8s_addons | difference(post_join_microk8s_status.stdout | from_yaml | json_query('addons[?status==`enabled`].name')) | join(' ') }}
+    when:
+      - microk8s_addons | difference(post_join_microk8s_status.stdout | from_yaml | json_query('addons[?status==`enabled`].name')) | length > 0
+      - inventory_hostname in groups.initial
+
+  - name: disable extra plugins when needed
+    shell: |
+      microk8s disable {{ post_join_microk8s_status.stdout | from_yaml | json_query('addons[?status==`enabled`].name') | difference(microk8s_addons) | join(' ') }}
+    when:
+      - post_join_microk8s_status.stdout | from_yaml | json_query('addons[?status==`enabled`].name') | difference(microk8s_addons) | length > 0
+      - inventory_hostname in groups.initial
+
+  - name: add tempfile for config
+    tempfile:
+      state: file
+    register: kubeconf_tmp
+    delegate_to: 127.0.0.1
+    run_once: true
+    when: add_local_kubeconfig
+
+  - name: get config from initial node
+    shell: |
+      microk8s config
+    register: kubeconfig_output
+    when:
+      - inventory_hostname in groups.initial
+      - add_local_kubeconfig
+
+  - name: save kubeconfig locally
+    copy:
+      content: "{{ kubeconfig_output.stdout }}"
+      dest: "{{ kubeconf_tmp.path }}"
+    delegate_to: 127.0.0.1
+    run_once: true
+    when: add_local_kubeconfig
+
+  - name: flatten kubeconfigs
+    shell: |
+      KUBECONFIG=~/.kube/config:{{ kubeconf_tmp.path }} kubectl config view --flatten
+    register: flat_kubeconfig
+    delegate_to: 127.0.0.1
+    run_once: true
+    when: add_local_kubeconfig
+
+  - name: merge kubeconfig
+    copy:
+      content: "{{ flat_kubeconfig.stdout }}" # todo: add posix linebreak
+      dest: "~/.kube/config"
+      backup: true
+    delegate_to: 127.0.0.1
+    run_once: true
+    when: add_local_kubeconfig
+
+  - name: cleanup temp
+    file:
+      path: "{{ kubeconf_tmp.path }}"
+      state: absent
+    when: add_local_kubeconfig

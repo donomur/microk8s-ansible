@@ -1,0 +1,20 @@
+---
+
+  - name: ensure SD card us mounted and proceed when ready
+    pause:
+      prompt: "Press Enter when SD card for {{ current_node }} is mounted at {{ boot_volume_path }}"
+
+  - name: check that volume exists
+    wait_for:
+      path: "{{ boot_volume_path }}"
+      state: present
+
+  - name: generate network-config
+    template:
+      src: network-config.yml.j2
+      dest: "{{ boot_volume_path }}/network-config"
+
+  - name: generate user-data
+    template:
+      src: user-data.yml.j2
+      dest: "{{ boot_volume_path }}/user-data"

@@ -1,0 +1,9 @@
+---
+
+- name: test play
+  # connection: local
+  hosts: localhost
+  # gather_facts: true
+  become: false
+  roles:
+    - role: user-data

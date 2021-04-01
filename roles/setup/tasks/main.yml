@@ -1,5 +1,12 @@
 ---
 
+  - name: install nfs packages for storage
+    apt:
+      name: nfs-common
+      state: latest
+      update_cache: true
+    become: true
+
   - name: install microk8s
     snap:
       name: microk8s
@@ -23,6 +30,14 @@
       name: "{{ ansible_user_id }}"
       groups:
         - microk8s
+    become: true
+    notify: reboot
+
+  - name: run apt updates
+    apt:
+      update_cache: true
+      autoremove: true
+      upgrade: dist
     become: true
     notify: reboot
 

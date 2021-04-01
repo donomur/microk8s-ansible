@@ -13,14 +13,14 @@
   initial:
     hosts:
       k8spi1:  # first node
-        ansible_host: 172.26.20.187 # you can comment/remove this if the hostname is sufficient
+        ansible_host: 172.26.20.11 # you can comment/remove this if the hostname is sufficient
 
   additional:
     hosts:
       k8spi2:
-        ansible_host: 172.26.20.120
+        ansible_host: 172.26.20.12
       k8spi3:
-        ansible_host: 172.26.20.184
+        ansible_host: 172.26.20.13
       k8spi4:
-        ansible_host: 172.26.20.121
+        ansible_host: 172.26.20.14
 
